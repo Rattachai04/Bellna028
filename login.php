@@ -67,14 +67,6 @@
             border-radius: 10px;
             padding: 10px;
         }
-        .btn-primary {
-            width: 100%;
-            border-radius: 10px;
-            background-color: #1e8d91ff;
-            border: none;
-            font-weight: 600;
-            padding: 10px;
-        }
         .btn-primary:hover {
             background-color: #152f6b;
         }
