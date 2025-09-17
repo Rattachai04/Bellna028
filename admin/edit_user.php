@@ -128,6 +128,90 @@ $user['email'] = $email;
     <meta charset="UTF-8">
     <title>แก้ไขข้อมูลสมาชิก</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <title>แก้ไขข้อมูลสมาชิก</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+    body {
+        background-color: #f0f4fa;
+        font-family: "Prompt", sans-serif;
+    }
+
+    h2 {
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #51f0ffff;
+        text-align: center;
+    }
+
+    .container {
+        max-width: 900px;
+    }
+
+    .card {
+        border-radius: 16px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        background: #fff;
+        margin-top: 30px;
+    }
+
+    .btn {
+        border-radius: 25px;
+        padding: 10px 20px;
+        font-weight: 500;
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #0d6efd, #0a58ca);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(90deg, #0a58ca, #0d6efd);
+    }
+
+    .btn-secondary {
+        border-radius: 25px;
+        background: #6c757d;
+        border: none;
+    }
+
+    .alert {
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .form-control {
+        border-radius: 12px;
+        padding: 10px 14px;
+        border: 1px solid #ced4da;
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    label {
+        font-weight: 500;
+        color: #0a4275;
+    }
+
+    .footer-note {
+        margin-top: 20px;
+        text-align: center;
+        color: #6c757d;
+        font-size: 14px;
+    }
+</style>
+
 </head>
 
 <body class="container mt-4">
