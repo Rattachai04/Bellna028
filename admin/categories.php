@@ -98,11 +98,11 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <style>
         body {
-            background: linear-gradient(135deg, #eaf2fb, #f7fbff);
+            background: linear-gradient(to right, #ca7efaff, #87ebfaff);
             font-family: "Sarabun", sans-serif;
         }
         nav.navbar {
-            background: #56ff9aff;
+            background: #4ac9fcff;
         }
         nav.navbar .navbar-brand {
             color: #000000ff !important;
