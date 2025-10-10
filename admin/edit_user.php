@@ -1,254 +1,187 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require '../config.php';
-require 'auth.admin.php'; 
-// TODO-1: เชื่อมต่อฐานข้อมูลด้วย PDO
-// TODO-2: การ์ดสิทธิ์(Admin Guard)
-// แนวทาง: ถ้า !isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin' -> redirect ไป ../login.php แล้ว exit;
+require 'auth.admin.php';
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-header("Location: ../login.php");
-exit;
+    header("Location: ../login.php");
+    exit;
 }
-// TODO-3: ตรวจว่ำมีพำรำมิเตอร์ id มำจริงไหม (ผ่ำน GET)
-// แนวทำง: ถ ้ำไม่มี -> redirect ไป users.php
+
 if (!isset($_GET['id'])) {
-header("Location: user.php");
-exit;
+    header("Location: user.php");
+    exit;
 }
-// TODO-4: ดึงค่ำ id และ "แคสต์เป็น int" เพื่อควำมปลอดภัย
+
 $user_id = (int)$_GET['id'];
-// ดงึขอ้ มลู สมำชกิทจี่ ะถกู แกไ้ข
-/*
-TODO-5: เตรียม/รัน SELECT (เฉพำะ role = 'member')
-SQL แนะน ำ:
-SELECT * FROM users WHERE user_id = ? AND role = 'member'
-- ใช ้prepare + execute([$user_id])
-- fetch(PDO::FETCH_ASSOC) แล้วเก็บใน $user
-*/
-$stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ? AND role = 'member'");
+$stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
-// TODO-6: ถ ้ำไม่พบข ้อมูล -> แสดงข ้อควำมและ exit;
+
 if (!$user) {
-echo "<h3>ไมพ่ บสมำชกิ</h3>";
-exit;
+    header("Location: user.php");
+    exit;
 }
-// ========== เมอื่ ผใู้ชก้ด Submit ฟอร์ม ==========
-$error = null;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-// TODO-7: รับค่ำ POST + trim
-$username = trim($_POST['username']);
-$full_name = trim($_POST['full_name']);
-$email = trim($_POST['email']);
+    $full_name = trim($_POST['full_name']);
+    $email = trim($_POST['email']);
+    $username = trim($_POST['username']);
+    $role = $_POST['role'];
 
-$password = $_POST['password'];
-$confirm = $_POST['confirm_password'];
-// TODO-8: ตรวจควำมครบถ ้วน และตรวจรูปแบบ email
-if ($username === '' || $email === '') {
-$error = "กรุณำกรอกข ้อมูลให้ครบถ ้วน";
-} elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-$error = "รูปแบบอีเมลไม่ถูกต ้อง";
-}
-// TODO-9: ถ ้ำ validate ผ่ำน ใหต้ รวจสอบซ ้ำ (username/email ชนกับคนอนื่ ทไี่ มใ่ ชต่ ัวเองหรือไม่)
-// SQL แนะน ำ:
-// SELECT 1 FROM users WHERE (username = ? OR email = ?) AND user_id != ?
-if (!$error) {
-$chk = $conn->prepare("SELECT 1 FROM users WHERE (username = ? OR email = ?) AND user_id != ?");
-$chk->execute([$username, $email, $user_id]);
-if ($chk->fetch()) {
-$error = "ชื่อผู้ใช้หรืออีเมลนี้มีอยู่ในระบบ";
-}
-}
+    $update = $conn->prepare("
+        UPDATE users 
+        SET full_name = ?, email = ?, username = ?, role = ? 
+        WHERE user_id = ?
+    ");
+    $update->execute([$full_name, $email, $username, $role, $user_id]);
 
-
-
-
-
-
-
-// ตรวจรหัสผ่ำน (กรณีต้องกำรเปลี่ยน)
-// เงื่อนไข: อนุญำตให้ปล่อยว่ำงได ้ (คือไม่เปลี่ยนรหัสผ่ำน)
-$updatePassword = false;
-$hashed = null;
-if (!$error && ($password !== '' || $confirm !== '')) {
-// TODO: นศ.เตมิกตกิ ำ เชน่ ยำว >= 6 และรหัสผ่ำนตรงกัน
-if (strlen($password) < 6) {
-$error = "รหัสผ่ำนต ้องยำวอย่ำงน้อย 6 อักขระ";
-} elseif ($password !== $confirm) {
-$error = "รหัสผ่ำนใหม่กับยืนยันรหัสผ่ำนไม่ตรงกัน";
-} else {
-// แฮชรหัสผ่ำน
-$hashed = password_hash($password, PASSWORD_DEFAULT);
-$updatePassword = true;
-}
-}
-// สร ้ำง SQL UPDATE แบบยืดหยุ่น (ถ ้ำไม่เปลี่ยนรหัสผ่ำนจะไม่แตะ field password)
-if (!$error) {
-if ($updatePassword) {
-// อัปเดตรวมรหัสผ่ำน
-$sql = "UPDATE users
-SET username = ?, full_name = ?, email = ?, password = ?
-WHERE user_id = ?";
-$args = [$username, $full_name, $email, $hashed, $user_id];
-} else {
-// อัปเดตเฉพำะข ้อมูลทั่วไป
-$sql = "UPDATE users
-SET username = ?, full_name = ?, email = ?
-WHERE user_id = ?";
-$args = [$username, $full_name, $email, $user_id];
-}
-$upd = $conn->prepare($sql);
-$upd->execute($args);
-header("Location: user.php");
-exit;
-}
-// เขียน update แบบปกต:ิ ถำ้ไมซ่ ้ำ -> ท ำ UPDATE
-// if (!$error) {
-// $upd = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, email = ? WHERE user_id = ?");
-// $upd->execute([$username, $full_name, $email, $user_id]);
-// // TODO-11: redirect กลับหน้ำ users.php หลังอัปเดตส ำเร็จ
-// header("Location: users.php");
-// exit;
-// }
-
-
-// TODO-10: ถำ้ไมซ่ ้ำ -> ท ำ UPDATE
-// SQL แนะน ำ:
-// UPDATE users SET username = ?, full_name = ?, email = ? WHERE user_id = ?
-
-// OPTIONAL: อัปเดตค่ำ $user เพอื่ สะทอ้ นคำ่ ทชี่ อ่ งฟอรม์ (หำกมีerror)
-$user['username'] = $username;
-$user['full_name'] = $full_name;
-$user['email'] = $email;
+    header("Location: user.php");
+    exit;
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
-    <title>แก้ไขข้อมูลสมาชิก</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!DOCTYPE html>
-<html lang="th">
-
-<head>
-    <meta charset="UTF-8">
-    <title>แก้ไขข้อมูลสมาชิก</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>🛠️ แก้ไขข้อมูลสมาชิก | Street GenZ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
-    body {
-        background-color: #f0f4fa;
-        font-family: "Prompt", sans-serif;
-    }
+        body {
+            background: linear-gradient(135deg, #0f0f0f, #1a0033, #32005e, #000);
+            background-size: 400% 400%;
+            animation: bgShift 12s ease infinite;
+            font-family: 'Kanit', sans-serif;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    h2 {
-        font-weight: 600;
-        margin-bottom: 20px;
-        color: #51f0ffff;
-        text-align: center;
-    }
+        @keyframes bgShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
-    .container {
-        max-width: 900px;
-    }
+        .card {
+            background: rgba(30, 30, 30, 0.9);
+            border: 2px solid #ff00ff44;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.3);
+            padding: 30px;
+            width: 100%;
+            max-width: 650px;
+        }
 
-    .card {
-        border-radius: 16px;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-        padding: 30px;
-        background: #fff;
-        margin-top: 30px;
-    }
+        .card h3 {
+            text-align: center;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-shadow: 0 0 8px #ff00ff;
+        }
 
-    .btn {
-        border-radius: 25px;
-        padding: 10px 20px;
-        font-weight: 500;
-    }
+        label {
+            color: #ffb6ff;
+            font-weight: 600;
+        }
 
-    .btn-primary {
-        background: linear-gradient(90deg, #0d6efd, #0a58ca);
-        border: none;
-    }
+        .form-control,
+        .form-select {
+            background-color: #1a1a1a;
+            color: #fff;
+            border: 1px solid #ff00ff33;
+        }
 
-    .btn-primary:hover {
-        background: linear-gradient(90deg, #0a58ca, #0d6efd);
-    }
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #ff00ff;
+            box-shadow: 0 0 10px #ff00ff55;
+        }
 
-    .btn-secondary {
-        border-radius: 25px;
-        background: #6c757d;
-        border: none;
-    }
+        .btn-glow {
+            background: linear-gradient(90deg, #ff00ff, #7700ff);
+            border: none;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+            transition: all 0.3s ease;
+        }
 
-    .alert {
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
+        .btn-glow:hover {
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.9);
+            transform: translateY(-2px);
+        }
 
-    .form-control {
-        border-radius: 12px;
-        padding: 10px 14px;
-        border: 1px solid #ced4da;
-    }
+        .btn-secondary {
+            background-color: #444;
+            color: #fff;
+            border: none;
+        }
 
-    .form-control:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
+        .btn-secondary:hover {
+            background-color: #666;
+        }
 
-    label {
-        font-weight: 500;
-        color: #0a4275;
-    }
-
-    .footer-note {
-        margin-top: 20px;
-        text-align: center;
-        color: #6c757d;
-        font-size: 14px;
-    }
-</style>
-
+        .neon-divider {
+            height: 2px;
+            background: linear-gradient(to right, #ff00ff, transparent);
+            margin: 20px 0;
+            border: none;
+        }
+    </style>
 </head>
+<body>
 
-<body class="container mt-4">
-    <h2>แก้ไขข้อมูลสมาชิก</h2>
-    <a href="users.php" class="btn btn-secondary mb-3">← กลับหน้ารายชื่อสมาชิก</a>
-    <?php if (isset($error)): ?>
-    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-    <form method="post" class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label">ชื่อผู้ใช้</label>
-            <input type="text" name="username" class="form-control" required value="<?=
-htmlspecialchars($user['username']) ?>">
+<div class="card">
+    <h3><i class="bi bi-pencil-square me-2"></i>แก้ไขข้อมูลสมาชิก</h3>
+    <form method="post">
+        <div class="mb-3">
+            <label for="username">ชื่อผู้ใช้</label>
+            <input type="text" id="username" name="username" class="form-control"
+                   value="<?= htmlspecialchars($user['username']) ?>" required>
         </div>
-        <div class="col-md-6">
-            <label class="form-label">ชื่อ - นามสกุล</label>
-            <input type="text" name="full_name" class="form-control" value="<?=
-htmlspecialchars($user['full_name']) ?>">
+
+        <div class="mb-3">
+            <label for="full_name">ชื่อ-นามสกุล</label>
+            <input type="text" id="full_name" name="full_name" class="form-control"
+                   value="<?= htmlspecialchars($user['full_name']) ?>" required>
         </div>
-        <div class="col-md-6">
-            <label class="form-label">อีเมล</label>
-            <input type="email" name="email" class="form-control" required value="<?=
-htmlspecialchars($user['email']) ?>">
+
+        <div class="mb-3">
+            <label for="email">อีเมล</label>
+            <input type="email" id="email" name="email" class="form-control"
+                   value="<?= htmlspecialchars($user['email']) ?>" required>
         </div>
-        <div class="col-12">
-            <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
+
+        <div class="mb-4">
+            <label for="role">สิทธิ์การใช้งาน</label>
+            <select name="role" id="role" class="form-select">
+                <option value="member" <?= $user['role'] === 'member' ? 'selected' : '' ?>>สมาชิก</option>
+                <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>แอดมิน</option>
+            </select>
         </div>
-        <div class="col-md-6">
-            <label class="form-label">รหัสผ่านใหม่ <small class="text-muted">(ถ้าไม่ต้องการเปลี่ยน ให้เว้นว่าง)
-                </small></label>
-            <input type="password" name="password" class="form-control">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">ยืนยันรหัสผ่ำนใหม่</label>
-            <input type="password" name="confirm_password" class="form-control">
+
+        <hr class="neon-divider">
+
+        <div class="d-flex justify-content-between">
+            <a href="user.php" class="btn btn-secondary">
+                <i class="bi bi-arrow-left-circle"></i> กลับ
+            </a>
+            <button type="submit" class="btn btn-glow">
+                <i class="bi bi-save2-fill"></i> บันทึกการแก้ไข
+            </button>
         </div>
     </form>
-</body>
+</div>
 
+</body>
 </html>

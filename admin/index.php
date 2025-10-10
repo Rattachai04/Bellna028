@@ -1,6 +1,5 @@
 <?php
 require '../config.php';
-// ตรวจสอบสิทธิ์admin
 require 'auth.admin.php';
 ?>
 <!DOCTYPE html>
@@ -8,105 +7,159 @@ require 'auth.admin.php';
 
 <head>
     <meta charset="UTF-8">
-    <title>แผงควบคุมผู้ดูแลระบบ</title>
+    <title>แผงควบคุมผู้ดูแลระบบ | Midnight Bloom Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-body {
-    background: linear-gradient(to right, #ca7efaff, #87ebfaff);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-h2 {
-    color: #000205ff;
-    font-weight: 700;
-    margin-bottom: 5px;
-}
+        body {
+            background: linear-gradient(180deg, #1a1a1a 0%, #333333 100%);
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+        }
 
-p.mb-4 {
-    font-size: 1.1rem;
-    color: #333;
-}
+        .admin-container {
+            max-width: 1100px;
+            margin: 50px auto;
+            background: #121212;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(4, 115, 250, 0.4);
+            padding: 50px;
+        }
 
-.btn {
-    border-radius: 12px;
-    padding: 12px 20px;
-    font-weight: 600;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
+        .admin-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
 
-.btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-}
+        .admin-header h2 {
+            font-weight: 700;
+            font-size: 2.2rem;
+            color: #b149fcff;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
 
-.btn-primary {
-    background: linear-gradient(45deg, #0d6efd, #3a8dff);
-    border: none;
-}
+        .admin-header p {
+            color: #ccc;
+            font-size: 1.1rem;
+        }
 
-.btn-success {
-    background: linear-gradient(45deg, #28a745, #20c997);
-    border: none;
-}
+        .admin-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
 
-.btn-warning {
-    background: linear-gradient(45deg, #ffc107, #ffca2c);
-    border: none;
-    color: #212529;
-}
+        .admin-card {
+            padding: 40px 20px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 180px;
+        }
 
-.btn-dark {
-    background: linear-gradient(45deg, #343a40, #495057);
-    border: none;
-}
+        .admin-card i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
 
-.btn-secondary {
-    background: #6c757d;
-    color: #fff;
-    border: none;
-}
+        .admin-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(236, 252, 11, 0.5);
+        }
 
-.row {
-    margin-top: 20px;
-}
+        .btn-products {
+            background: linear-gradient(135deg, #7c83fd, #96baff);
+            color: #fff;
+        }
 
-a.btn.w-100 {
-    font-size: 1rem;
-}
+        .btn-orders {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+        }
 
-@media (max-width: 576px) {
-    h2 {
-        font-size: 1.5rem;
-    }
-    p.mb-4 {
-        font-size: 1rem;
-    }
-    a.btn.w-100 {
-        font-size: 0.95rem;
-        padding: 10px;
-    }
-}
-</style>
+        .btn-users {
+            background: linear-gradient(135deg, #f39c12, #f1c40f);
+            color: #fff;
+        }
+
+        .btn-categories {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: #fff;
+        }
+
+        .logout-btn {
+            display: block;
+            margin: 50px auto 0;
+            text-align: center;
+        }
+
+        .logout-btn .btn {
+            background: #42c8fdff;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            padding: 10px 30px;
+            transition: 0.3s;
+        }
+
+        .logout-btn .btn:hover {
+            background: #ff6380;
+            transform: translateY(-3px);
+        }
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 30px 20px;
+            }
+            .admin-card {
+                min-height: 160px;
+                font-size: 1.1rem;
+            }
+            .admin-card i {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
 </head>
 
-<body class="container mt-4">
-    <h2>ระบบผู้ดูแลระบบ</h2>
-    <p class="mb-4">ยินดีต้อนรับ, <?= htmlspecialchars($_SESSION['username']) ?></p>
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <a href="products.php" class="btn btn-primary w-100">จัดการสินค้า</a>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2>🛍️ แผงควบคุมผู้ดูแลระบบ</h2>
+            <p>ยินดีต้อนรับ, <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></p>
         </div>
-        <div class="col-md-4 mb-3">
-            <a href="orders.php" class="btn btn-success w-100">จัดการคำสั่งซื้อ</a>
+
+        <div class="admin-menu">
+            <a href="products.php" class="admin-card btn-products">
+                <i class="bi bi-bag-fill"></i>
+                จัดการสินค้า
+            </a>
+            <a href="orders.php" class="admin-card btn-orders">
+                <i class="bi bi-box-seam"></i>
+                จัดการคำสั่งซื้อ
+            </a>
+            <a href="user.php" class="admin-card btn-users">
+                <i class="bi bi-people-fill"></i>
+                จัดการสมาชิก
+            </a>
+            <a href="categories.php" class="admin-card btn-categories">
+                <i class="bi bi-folder-fill"></i>
+                จัดการหมวดหมู่
+            </a>
         </div>
-        <div class="col-md-4 mb-3">
-            <a href="user.php" class="btn btn-warning w-100">จัดการสมาชิก</a>
-        </div>
-        <div class="col-md-4 mb-3">
-            <a href="categories.php" class="btn btn-dark w-100">จัดการหมวดหมู่</a>
+
+        <div class="logout-btn">
+            <a href="../logout.php" class="btn btn-lg"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
         </div>
     </div>
-    <a href="../logout.php" class="btn btn-secondary mt-3">ออกจากระบบ</a>
 </body>
 
 </html>
